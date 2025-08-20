@@ -77,7 +77,7 @@ systemctl enable --now httpd
 ```
 systemctl status httpd
 ```
-![picture 3 ](apachepicture3.png)
+![pitucre 3 ](./Attachments/apachepicture3.png)
 - **Enables Apache at boot and starts it immediately.**
 
 ![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image001.png)
@@ -122,7 +122,7 @@ chmod 644
 ```
 vim /etc/httpd/conf/userdir.conf
 ```
-![picture 4 ](apachepicture4.png)
+![pitucre 4 ](./Attachments/apachepicture4.png)
 - **1****. Add # infront of UserDir Disable (to make it comment).**
 - 2. Remove # infront of UserDir public_html (enables public_html).**
 - **3****. If we want to host different file add it here  <directory “/home/*/filename”>**
