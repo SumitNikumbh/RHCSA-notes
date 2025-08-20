@@ -41,7 +41,7 @@ vim /etc/yum.repos.d/sumit.repo
 ```
 
 **Example content inside** `**sumit.repo**
-![pitucre 1 ](apachepicture1.png)
+![pitucre 1 ](./Attachments/apachepicture1.png)
 
 - **Creates a custom repo file pointing to RHEL DVD.**
 
@@ -62,7 +62,7 @@ yum update
 ```
 yum install httpd* -y
 ```
-![picture 2 ](apachepicture2.png)
+![pitucre 2 ](./Attachments/apachepicture2.png)
 
 - **Installs Apache web server and required packages.**
 
