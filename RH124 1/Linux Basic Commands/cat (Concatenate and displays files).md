@@ -11,3 +11,5 @@ Displays file content, merges files.
 ·      **cat >> file** → Append to file
 
 ·      **cat -n file** → Show with line numbers
+
+![cat command example]
