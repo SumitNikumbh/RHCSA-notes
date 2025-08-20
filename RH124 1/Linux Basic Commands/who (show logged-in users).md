@@ -6,4 +6,3 @@ Displays who is currently logged into the system.
 
 ·      **who -H** → Add headers to output
 
-![]
