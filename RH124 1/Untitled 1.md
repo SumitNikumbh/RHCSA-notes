@@ -201,4 +201,4 @@ curl http://192.168.179.133/~sumit/sumit.html
 
 **Apache is successfully hosting content from the **user’s home directory** (**`**/home/sumit/public_html/sumit.html**`**).**
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image012.png)
+![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image012.png)[[]]
