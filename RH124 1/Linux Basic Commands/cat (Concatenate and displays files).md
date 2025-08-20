@@ -12,4 +12,4 @@ Displays file content, merges files.
 
 ·      **cat -n file** → Show with line numbers
 
-![cat command example](../Assets/Screenshot%202025-07-12%)
+![cat command example](../Assets/Screenshot%202025-07-12%20120541.png)
