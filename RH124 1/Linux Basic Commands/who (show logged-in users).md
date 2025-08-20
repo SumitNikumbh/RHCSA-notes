@@ -5,4 +5,4 @@ Displays who is currently logged into the system.
 ·      **who -u** → Show idle time and PID
 
 ·      **who -H** → Add headers to output
-![[cd example]]
+![[cd R]]
