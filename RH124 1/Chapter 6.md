@@ -144,7 +144,7 @@ passwd -w <days> <username>	Set warning period before password expires
 Using getent for Account Info
 getent passwd — list all users
 
-getent passwd <username> — show a specific user's entry
+getent passwd <username> — show a specific users entry
 
 getent group — list all groups
 
