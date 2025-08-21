@@ -1,5 +1,4 @@
 
-
 # 1. Introduction to VIM
 
 **VIM (Vi IMproved)** is a powerful text editor that is an improved version of the vi editor distributed with most UNIX systems. It supports multiple modes and is often used for system administration tasks.  
@@ -9,6 +8,7 @@ $ sudo yum install vim -y
   
 **To open a file**:  
 $ vim filename
+
 ![pitucre 1 ](./Attachments/VIMpicture1.png)
 
 # 2. Modes in VIM
