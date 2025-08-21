@@ -178,7 +178,7 @@ chgrp -R group directory/
 
 1️⃣3️⃣ Special Permissions: SUID, SGID, Sticky Bit
 🧍 SUID (Set User ID)
-Executes file with file owner's permissions.
+Executes file with file owners permissions.
 
 Set: chmod u+s filename
 
