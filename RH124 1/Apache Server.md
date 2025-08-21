@@ -1,200 +1,153 @@
 # **Proof of Concept: Hosting Apache Server from User’s Home Directory**
-
 **By: Sumit Nikumbh**
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image001.png)
+---
 
 ## **Objective**
 
-**This PoC demonstrates how to host a webpage using Apache HTTP Server from a **normal user’s home directory** in RHEL. The example uses user **sumit**.**
+This PoC demonstrates how to host a webpage using the Apache HTTP Server from a **normal user’s home directory** in **RHEL**.  
+The example uses the user: **`sumit`**
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
+---
 
 ## **Steps**
 
 ### **1. Verify Available Disks**
 
-```
+```bash
 lsblk
-```
+Lists block devices (hard disks, partitions, DVD).
 
-- **Lists block devices (hard disks, partitions, DVD).**
-- **Ensures** `**/dev/sr0**` **(RHEL DVD) is available.**
+Ensure /dev/sr0 (RHEL DVD) is available.
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
-
-### **2. Mount RHEL DVD for Local Yum Repository**
-
-```
+2. Mount RHEL DVD for Local Yum Repository
+bash
 mount /dev/sr0 /mnt
-```
+Mounts the DVD on /mnt, required to configure a local repository.
 
-- **Mounts the DVD on** `**/mnt**`**.**
-- **Required for configuring a local repository.**
-
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
-
-### **3. Configure Local Yum Repository**
-
-```
+3. Configure Local Yum Repository
+bash
 vim /etc/yum.repos.d/sumit.repo
-```
+Example content for sumit.repo:
 
-**Example content inside** `**sumit.repo**
-![pitucre 1 ](./Attachments/apachepicture1.png)
+ini
+[BaseOS]
+name=BaseOS
+baseurl=file:///mnt/BaseOS
+enabled=1
+gpgcheck=0
 
-- **Creates a custom repo file pointing to RHEL DVD.**
+[AppStream]
+name=AppStream
+baseurl=file:///mnt/AppStream
+enabled=1
+gpgcheck=0
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image005.png)
-
-### **4. Update Yum Cache**
-
-```
+4. Update Yum Cache
+bash
 yum update
-```
+Refreshes metadata for the newly added local repository.
 
-- **Refreshes metadata for the newly added repo.**
-
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image005.png)
-
-### **5. Install Apache HTTP Server**
-
-```
+5. Install Apache HTTP Server
+bash
 yum install httpd* -y
-```
-![pitucre 2 ](./Attachments/apachepicture2.png)
 
-- **Installs Apache web server and required packages.**
-
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
-
-### **6. Enable and Start Apache Service**
-
-```
+6. Enable and Start Apache Service
+bash
 systemctl enable --now httpd
-```
-
-```
 systemctl status httpd
-```
-![pitucre 3 ](./Attachments/apachepicture3.png)
-- **Enables Apache at boot and starts it immediately.**
+Enables Apache at boot and starts it immediately.
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image001.png)
-
-### **7. Create User Directory for Hosting**
-
-```
+7. Create User Directory for Hosting
+bash
 mkdir /home/sumit/public_html
-```
+echo "This is Apache server" > /home/sumit/public_html/sumit.html
+Creates public_html folder in user’s home directory.
 
-```
-echo "this is apache server" > /home/sumit/public_html/sumit.html
-```
+Creates a basic HTML file for testing.
 
-- **Creates** `**public_html**` **folder inside user home.**
-- **Creates a test HTML file.**
+8. Set Proper File Permissions
+bash
+chmod 755 /home/sumit
+chmod 755 /home/sumit/public_html
+chmod 644 /home/sumit/public_html/sumit.html
+Ensures Apache has read access to the directory and files.
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
+9. Configure Apache to Allow User Directories
+Edit the file:
 
-### **8. Set Proper File Permissions**
+bash
+vim /etc/httpd/conf.d/userdir.conf
+Make the following changes:
 
-```
-chmod 755
-```
+1.Comment out the line:
+#UserDir disabled
 
-```
-chmod 755
-```
+2.Uncomment:
+UserDir public_html
 
-```
-chmod 644
-```
+3.Optionally, customize the directory block:
 
-- **Ensures Apache can read files inside user directory.**
+<Directory "/home/*/public_html">
+    AllowOverride FileInfo AuthConfig Limit
+    Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec
+    Require method GET POST OPTIONS
+</Directory>
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
+10. Configure SELinux for User Directory Hosting
+Enable home directory access:
 
-### **9. Configure User Directory Access in Apache**
-
-**Edit** `**userdir.conf**`**:**
-
-```
-vim /etc/httpd/conf/userdir.conf
-```
-![pitucre 4 ](./Attachments/apachepicture4.png)
-- **1****. Add # infront of UserDir Disable (to make it comment).**
-- 2. Remove # infront of UserDir public_html (enables public_html).**
-- **3****. If we want to host different file add it here  <directory “/home/*/filename”>**
-
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image012.png)
-
-### **10. Configure SELinux for Apache**
-
-**Enable home directory access:**
-
-```
+bash
 setsebool -P httpd_enable_homedirs on
-```
+Set SELinux context for public_html:
 
-**Set SELinux context:**
-
-```
+bash
 semanage fcontext -a -t httpd_sys_content_t '/home/sumit/public_html(/.*)?'
-```
-
-```
 restorecon -R /home/sumit/public_html
-```
 
-**Verify labels:**
-
-```
+Verify SELinux context:
+bash
 ls -lZd /home/sumit/public_html
-```
-
-```
 ls -lZ /home/sumit/public_html/sumit.html
-```
 
-```
-It should be httpd_user_content_t 
-```
+Should show httpd_sys_content_t or httpd_user_content_t.
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
+If semanage is not available, install policycoreutils:
+bash
+yum install policycoreutils-python-utils -y
 
-### **11. Restart Apache Service**
-
-```
+11. Restart Apache Service
+bash
 systemctl restart httpd
-```
+Applies all configuration changes.
 
-- **Reloads Apache with new configurations.**
-
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
-
-### **12. Verify IP Address**
-
-```
+12. Verify IP Address
+bash
 ip a
-```
+Note the IP address to test web access (e.g., 192.168.179.133).
 
-- **Get the server IP address (example:** `**192.168.179.133**`**).**
-
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
-
-### **13. Test Website Access**
-
-```
+13. Test Webpage Access
+bash
 curl http://192.168.179.133/~sumit/sumit.html
-```
+Should return: This is Apache server
 
- **Accesses the hosted page from user’s directory.**
+You can also access it via a browser:
+http://<your-ip>/~sumit/sumit.html
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image002.png)
+Result
+Apache is successfully hosting content from the user's home directory:
+/home/sumit/public_html/sumit.html
 
-## **Result**
 
-**Apache is successfully hosting content from the **user’s home directory** (**`**/home/sumit/public_html/sumit.html**`**).**
+# 📄 Proof of Concept: Hosting Apache Server from User’s Home Directory
+**By: Sumit Nikumbh**
 
-![](file:///C:/Users/SUMIT/AppData/Local/Temp/msohtmlclip1/01/clip_image012.png)
+---
+
+## 🧭 Objective
+
+This Proof of Concept (PoC) demonstrates how to host a webpage using the **Apache HTTP Server** from a **normal user's home directory** on **RHEL**.  
+Example user: `sumit`
+
+---
+
