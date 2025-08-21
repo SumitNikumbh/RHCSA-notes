@@ -1,4 +1,4 @@
-**==by: Sumit Nikumbh==**
+
 
 # 1. Introduction to VIM
 
