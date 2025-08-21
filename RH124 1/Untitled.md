@@ -1,97 +1,333 @@
-# Introduction to VIM
+# **Proof of Concept: Hosting Apache Server from User’s Home Directory**
+**By: Sumit Nikumbh**
 
-VIM (Vi IMproved) is a powerful text editor that extends the functionality of the classic `vi` editor found on most UNIX systems. It supports multiple modes and is commonly used for programming, system administration, and file editing tasks.
+---
 
-### To install VIM on RHEL:
+## **Objective**
+
+This PoC demonstrates how to host a webpage using the Apache HTTP Server from a **normal user’s home directory** in **RHEL**.  
+The example uses the user: **`sumit`**
+
+---
+
+## **Steps**
+
+### **1. Verify Available Disks**
+
 ```bash
-sudo yum install vim -y
-To open a file in VIM:
+lsblk
+Lists block devices (hard disks, partitions, DVD).
+
+Ensure /dev/sr0 (RHEL DVD) is available.
+
+2. Mount RHEL DVD for Local Yum Repository
 bash
 Copy code
-vim filename
+mount /dev/sr0 /mnt
+Mounts the DVD on /mnt, required to configure a local repository.
 
-![pitucre](./Attachments/VIMpicture1.png)
-
-1. Modes in VIM
-VIM operates in three primary modes:
-
-Normal Mode: Default mode for navigation and editing.
-
-Insert Mode: Press i to enter. Used for inserting text.
-
-Command Mode: Press : to enter. Used for running VIM commands.
-
-Press Esc to return to Normal Mode from Insert or Command Mode.
-
-2. Insert Mode Commands
-Command	Description
-i	Insert before the cursor
-I	Insert at the beginning of the line
-a	Insert after the cursor
-A	Insert at the end of the line
-o	Open a new line below the current line
-O	Open a new line above the current line
-
-3. Normal Mode Navigation & Editing
-Command	Description
-h	Move left
-l	Move right
-j	Move down
-k	Move up
-0	Move to beginning of line
-$	Move to end of line
-w	Jump to next word
-b	Jump to previous word
-G	Go to end of file
-gg	Go to beginning of file
-10G	Go to line number 10
-
-4. Command Mode (Save/Quit/etc.)
-Command	Action
-:w	Save file
-:q	Quit VIM
-:wq	Save and quit
-:q!	Force quit without saving
-:x	Save and quit (same as :wq)
-:set nu	Show line numbers
-:set nonu	Hide line numbers
-
-5. Copy, Paste, Undo, Redo
-Command	Action
-yy	Copy current line
-p	Paste below current line
-P	Paste above current line
-u	Undo last change
-Ctrl + r	Redo undone change
-
-6. Delete Commands
-Command	Action
-x	Delete character under cursor
-X	Delete character before cursor
-dw	Delete word
-dd	Delete current line
-d$	Delete from cursor to end of line
-d^	Delete from cursor to beginning of line
-dG	Delete from cursor to end of file
-:10,20d	Delete lines 10 to 20
-
-7. Searching and Highlighting
-Command	Action
-/word	Search for 'word' forward
-?word	Search for 'word' backward
-n	Jump to next match
-N	Jump to previous match
-
-8. Customization with .vimrc
-To make VIM settings persistent across sessions, add configuration options to the ~/.vimrc file:
-
-vim
+3. Configure Local Yum Repository
+bash
 Copy code
-set nu             " Show line numbers
-syntax on          " Enable syntax highlighting
-set tabstop=4      " Set tab width to 4 spaces
-set autoindent     " Enable auto-indentation
-set smartindent    " Enable smart indentation
+vim /etc/yum.repos.d/sumit.repo
+Example content for sumit.repo:
 
-🔚 Summary
-This guide covers the essential features of VIM, including modes, navigation, editing, file handling, and configuration. It's a vital tool for Linux administrators and developers alike.
+ini
+Copy code
+[BaseOS]
+name=Red Hat Enterprise Linux 9 - BaseOS
+baseurl=file:///mnt/BaseOS
+enabled=1
+gpgcheck=0
+
+[AppStream]
+name=Red Hat Enterprise Linux 9 - AppStream
+baseurl=file:///mnt/AppStream
+enabled=1
+gpgcheck=0
+📸 apachepicture1.png
+![[apachepicture1.png]]
+
+4. Update Yum Cache
+bash
+Copy code
+yum update
+Refreshes metadata for the newly added local repository.
+
+5. Install Apache HTTP Server
+bash
+Copy code
+yum install httpd* -y
+📸 apachepicture2.png
+![[apachepicture2.png]]
+
+6. Enable and Start Apache Service
+bash
+Copy code
+systemctl enable --now httpd
+systemctl status httpd
+📸 apachepicture3.png
+![[apachepicture3.png]]
+
+Enables Apache at boot and starts it immediately.
+
+7. Create User Directory for Hosting
+bash
+Copy code
+mkdir /home/sumit/public_html
+echo "This is Apache server" > /home/sumit/public_html/sumit.html
+Creates public_html folder in user’s home directory.
+
+Creates a basic HTML file for testing.
+
+8. Set Proper File Permissions
+bash
+Copy code
+chmod 755 /home/sumit
+chmod 755 /home/sumit/public_html
+chmod 644 /home/sumit/public_html/sumit.html
+Ensures Apache has read access to the directory and files.
+
+9. Configure Apache to Allow User Directories
+Edit the file:
+
+bash
+Copy code
+vim /etc/httpd/conf.d/userdir.conf
+Make the following changes:
+
+Comment out the line:
+
+apache
+Copy code
+#UserDir disabled
+Uncomment:
+
+apache
+Copy code
+UserDir public_html
+Optionally, customize the directory block:
+
+apache
+Copy code
+<Directory "/home/*/public_html">
+    AllowOverride FileInfo AuthConfig Limit
+    Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec
+    Require method GET POST OPTIONS
+</Directory>
+📸 apachepicture4.png
+![[apachepicture4.png]]
+
+10. Configure SELinux for User Directory Hosting
+Enable home directory access:
+
+bash
+Copy code
+setsebool -P httpd_enable_homedirs on
+Set SELinux context for public_html:
+
+bash
+Copy code
+semanage fcontext -a -t httpd_sys_content_t '/home/sumit/public_html(/.*)?'
+restorecon -R /home/sumit/public_html
+Verify SELinux context:
+
+bash
+Copy code
+ls -lZd /home/sumit/public_html
+ls -lZ /home/sumit/public_html/sumit.html
+Should show httpd_sys_content_t or httpd_user_content_t.
+
+If semanage is not available, install policycoreutils:
+
+bash
+Copy code
+yum install policycoreutils-python-utils -y
+11. Restart Apache Service
+bash
+Copy code
+systemctl restart httpd
+Applies all configuration changes.
+
+12. Verify IP Address
+bash
+Copy code
+ip a
+Note the IP address to test web access (e.g., 192.168.179.133).
+
+13. Test Webpage Access
+bash
+Copy code
+curl http://192.168.179.133/~sumit/sumit.html
+Should return: This is Apache server
+
+You can also access it via a browser:
+http://<your-ip>/~sumit/sumit.html
+
+Result
+Apache is successfully hosting content from the user's home directory:
+/home/sumit/public_html/sumit.html
+
+
+# 📄 Proof of Concept: Hosting Apache Server from User’s Home Directory
+**By: Sumit Nikumbh**
+
+---
+
+## 🧭 Objective
+
+This Proof of Concept (PoC) demonstrates how to host a webpage using the **Apache HTTP Server** from a **normal user's home directory** on **RHEL**.  
+Example user: `sumit`
+
+---
+
+## 🛠️ Steps
+
+### 1. 🔍 Verify Available Disks
+
+```bash
+lsblk
+Lists block devices.
+
+Ensure /dev/sr0 (RHEL installation DVD) is available.
+
+2. 💿 Mount RHEL DVD for Local Yum Repository
+bash
+Copy code
+mount /dev/sr0 /mnt
+Mounts the RHEL media to /mnt.
+
+3. 📁 Configure Local Yum Repository
+Create a new repo file:
+
+bash
+Copy code
+vim /etc/yum.repos.d/sumit.repo
+Example content:
+
+ini
+Copy code
+[BaseOS]
+name=RHEL9 BaseOS
+baseurl=file:///mnt/BaseOS
+enabled=1
+gpgcheck=0
+
+[AppStream]
+name=RHEL9 AppStream
+baseurl=file:///mnt/AppStream
+enabled=1
+gpgcheck=0
+📸 ![[apachepicture1.png]]
+
+4. 🔄 Update Yum Cache
+bash
+Copy code
+yum update
+Updates metadata using the new repository.
+
+5. 🌐 Install Apache HTTP Server
+bash
+Copy code
+yum install httpd* -y
+📸 ![[apachepicture2.png]]
+
+6. 🚀 Enable and Start Apache
+bash
+Copy code
+systemctl enable --now httpd
+systemctl status httpd
+📸 ![[apachepicture3.png]]
+
+7. 🏠 Create User Directory for Hosting
+bash
+Copy code
+mkdir /home/sumit/public_html
+echo "This is Apache server" > /home/sumit/public_html/sumit.html
+8. 🔐 Set Proper File Permissions
+bash
+Copy code
+chmod 755 /home/sumit
+chmod 755 /home/sumit/public_html
+chmod 644 /home/sumit/public_html/sumit.html
+Grants Apache read access to files.
+
+9. ⚙️ Configure Apache for User Directories
+Edit the config file:
+
+bash
+Copy code
+vim /etc/httpd/conf.d/userdir.conf
+Make the following changes:
+
+Comment this line:
+
+apache
+Copy code
+#UserDir disabled
+Uncomment this:
+
+apache
+Copy code
+UserDir public_html
+Optional for advanced config:
+
+apache
+Copy code
+<Directory "/home/*/public_html">
+    AllowOverride FileInfo AuthConfig Limit
+    Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec
+    Require method GET POST OPTIONS
+</Directory>
+📸 ![[apachepicture4.png]]
+
+10. 🔒 Configure SELinux
+Enable home directory access:
+
+bash
+Copy code
+setsebool -P httpd_enable_homedirs on
+Set SELinux context:
+
+bash
+Copy code
+semanage fcontext -a -t httpd_sys_content_t '/home/sumit/public_html(/.*)?'
+restorecon -R /home/sumit/public_html
+Check the labels:
+
+bash
+Copy code
+ls -lZd /home/sumit/public_html
+ls -lZ /home/sumit/public_html/sumit.html
+Expected context: httpd_sys_content_t or httpd_user_content_t
+
+If semanage is not installed:
+
+bash
+Copy code
+yum install policycoreutils-python-utils -y
+11. 🔁 Restart Apache
+bash
+Copy code
+systemctl restart httpd
+12. 🌐 Verify IP Address
+bash
+Copy code
+ip a
+Example: 192.168.179.133
+
+13. ✅ Test Webpage Access
+From terminal:
+
+bash
+Copy code
+curl http://192.168.179.133/~sumit/sumit.html
+Or open in browser:
+
+arduino
+Copy code
+http://192.168.179.133/~sumit/sumit.html
+🧪 Result
+Apache is successfully hosting content from:
+/home/sumit/public_html/sumit.html
+
