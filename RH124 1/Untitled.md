@@ -113,7 +113,6 @@ ls -lZ /home/sumit/public_html/sumit.html
 Should show httpd_sys_content_t or httpd_user_content_t.
 
 If semanage is not available, install policycoreutils:
-
 bash
 yum install policycoreutils-python-utils -y
 
